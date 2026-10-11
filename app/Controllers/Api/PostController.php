@@ -18,13 +18,30 @@ class PostController extends ResourceController
     public function create()
     {
         $this->setCorsHeaders();
-        $data = $this->request->getJSON(true);
-        $this->model->insert($data);
+        $requestData = $this->request->getJSON(true) ?? [];
+        $data = [
+            'title' => $requestData['title'] ?? null,
+            'body'  => $requestData['body'] ?? null,
+        ];
+
+        $insertId = $this->model->insert($data, true);
+
+        if ($insertId === false || $insertId === null || $insertId === '') {
+            return $this->failServerError('data gagal disimpan');
+        }
+
+        $post = $this->model->find($insertId);
+        if ($post === null) {
+            return $this->failServerError('data tersimpan tetapi gagal mengambil kembali record');
+        }
 
         return $this->respondCreated([
-            'status'  => 201,
-            'message' => 'data berhasil masuk!',
-            'data'    => $data
+            'status'   => 201,
+            'error'    => null,
+            'messages' => [
+                'success' => 'data berhasil disimpan'
+            ],
+            'data'     => $post,
         ]);
     }
 
